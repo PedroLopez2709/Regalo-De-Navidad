@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <!-- Configuración óptima de viewport y áreas seguras (notch / barra inferior) para iPhone e iPad -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+    <!-- Metatags específicos de Apple / Safari Web App -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Tu Adviento">
+    <meta name="theme-color" content="#4a0811">
+
+    <title>Tu Calendario de Adviento</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        :root {
+            --rojo-top: #6e111d;
+            --rojo-mid: #4a0811;
+            --rojo-bot: #260308;
+            --verde-bosque: #173f2c;
+            --verde-bosque-claro: #1f523a;
+            --rojo-puerta: #8f1826;
+            --rojo-puerta-claro: #a81e2e;
+            --dorado: #d4af37;
+            --dorado-brillo: #f3d266;
+            --crema: #fdf8f0;
+        }
+
+        * {
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            min-height: 100vh;
+            min-height: 100dvh;
+            overflow-x: hidden;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--rojo-mid);
+            background-image:
+                radial-gradient(circle at 20% 15%, rgba(243, 210, 102, 0.14) 0%, transparent 42%),
+                radial-gradient(circle at 82% 25%, rgba(212, 175, 55, 0.11) 0%, transparent 45%),
+                radial-gradient(circle at 50% 85%, rgba(243, 210, 102, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at top center, var(--rojo-top) 0%, var(--rojo-mid) 52%, var(--rojo-bot) 100%);
+            background-attachment: fixed;
+            color: var(--crema);
+            position: relative;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            padding-left: env(safe-area-inset-left, 0px);
+            padding-right: env(safe-area-inset-right, 0px);
+        }
+
+        .font-serif-title {
+            font-family: Georgia, 'Times New Roman', serif;
+        }
+
+        /* Soporte nativo de desenfoque para Safari iOS / macOS */
+        .safari-blur {
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+        }
+
+        /* Canvas de nieve Retina */
+        #snow-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Canvas de confeti dorado */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 60;
+        }
+
+        /* Guirnalda superior de luces navideñas */
+        .lights-strand {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            justify-content: space-around;
+            padding: 0 8px;
+            overflow: hidden;
+            height: 36px;
+            border-top: 2px solid rgba(23, 63, 44, 0.9);
+        }
+
+        .bulb {
+            width: 11px;
+            height: 17px;
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            position: relative;
+            margin-top: 6px;
+            -webkit-animation: twinkle 2.3s infinite alternate ease-in-out;
+            animation: twinkle 2.3s infinite alternate ease-in-out;
+        }
+
+        .bulb::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: 3px;
+            width: 5px;
+            height: 6px;
+            background: #173f2c;
+            border-radius: 2px;
+        }
+
+        .bulb-gold {
+            background: #f3d266;
+            box-shadow: 0 0 12px 3px rgba(243, 210, 102, 0.85), 0 0 22px 5px rgba(212, 175, 55, 0.45);
+        }
+
+        .bulb-red {
+            background: #ff6b7a;
+            box-shadow: 0 0 12px 3px rgba(255, 107, 122, 0.8), 0 0 22px 5px rgba(220, 38, 38, 0.4);
+            -webkit-animation-delay: 0.6s;
+            animation-delay: 0.6s;
+        }
+
+        .bulb-green {
+            background: #4ade80;
+            box-shadow: 0 0 12px 3px rgba(74, 222, 128, 0.75), 0 0 22px 5px rgba(22, 163, 74, 0.4);
+            -webkit-animation-delay: 1.2s;
+            animation-delay: 1.2s;
+        }
+
+        .bulb-warm {
+            background: #fff7d6;
+            box-shadow: 0 0 12px 3px rgba(255, 247, 214, 0.9), 0 0 22px 5px rgba(253, 230, 138, 0.5);
+            -webkit-animation-delay: 1.8s;
+            animation-delay: 1.8s;
+        }
+
+        @-webkit-keyframes twinkle {
+            0% { opacity: 0.42; -webkit-transform: scale(0.93); transform: scale(0.93); }
+            100% { opacity: 1; -webkit-transform: scale(1.08); transform: scale(1.08); }
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.42; transform: scale(0.93); }
+            100% { opacity: 1; transform: scale(1.08); }
+        }
+
+        /* Contenedor 3D de cada puerta compatible con Safari WebKit */
+        .door-container {
+            -webkit-perspective: 1100px;
+            perspective: 1100px;
+            aspect-ratio: 1 / 1.08;
+            touch-action: manipulation;
+        }
+
+        .door-card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            -webkit-transform-style: preserve-3d;
+            transform-style: preserve-3d;
+            -webkit-transition: -webkit-transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        @media (hover: hover) {
+            .door-card:hover {
+                -webkit-transform: translateY(-4px) scale(1.02);
+                transform: translateY(-4px) scale(1.02);
+            }
+        }
+
+        .door-card:active {
+            -webkit-transform: scale(0.97);
+            transform: scale(0.97);
+        }
+
+        /* Interior de la tarjeta (fondo crema postal) */
+        .door-inside {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(145deg, #fdf8f0 0%, #f4e8d1 100%);
+            border-radius: 1rem;
+            border: 2px solid var(--dorado);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0.65rem;
+            text-align: center;
+            color: #4a0811;
+            box-shadow: inset 0 4px 12px rgba(38, 3, 8, 0.25);
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+        }
+
+        /* Hoja frontal de la puerta que gira hacia la izquierda */
+        .door-front {
+            position: absolute;
+            inset: 0;
+            border-radius: 1rem;
+            -webkit-transform-origin: left center;
+            transform-origin: left center;
+            -webkit-transition: -webkit-transform 0.85s cubic-bezier(0.4, 0, 0.2, 1), filter 0.3s ease;
+            transition: transform 0.85s cubic-bezier(0.4, 0, 0.2, 1), filter 0.3s ease;
+            -webkit-backface-visibility: visible;
+            backface-visibility: visible;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid rgba(212, 175, 55, 0.65);
+            box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.5), inset 0 0 14px rgba(243, 210, 102, 0.14);
+            overflow: hidden;
+            will-change: transform;
+        }
+
+        /* Alternancia verde bosque profundo y rojo navideño cálido */
+        .door-theme-green {
+            background: linear-gradient(145deg, var(--verde-bosque-claro) 0%, var(--verde-bosque) 100%);
+        }
+
+        .door-theme-red {
+            background: linear-gradient(145deg, var(--rojo-puerta-claro) 0%, var(--rojo-puerta) 100%);
+        }
+
+        /* Acabado dorado especial para el día 24 (Nochebuena) */
+        .door-theme-gold {
+            background: linear-gradient(145deg, #e5c158 0%, #b8891e 100%);
+            border: 2.5px solid var(--dorado-brillo);
+            box-shadow: 0 0 26px rgba(243, 210, 102, 0.55), inset 0 0 16px rgba(255, 255, 255, 0.35);
+        }
+
+        /* Estado abierto en 3D */
+        .door-container.opened .door-front {
+            -webkit-transform: rotateY(-112deg);
+            transform: rotateY(-112deg);
+            filter: brightness(0.86);
+        }
+
+        /* Sello postal decorativo en el modal */
+        .postal-stamp {
+            border: 2px dashed rgba(143, 24, 38, 0.35);
+            background: rgba(253, 248, 240, 0.9);
+        }
+
+        button {
+            touch-action: manipulation;
+        }
+
+        /* Scrollbar estilizada */
+        ::-webkit-scrollbar {
+            width: 7px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #260308;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d4af37;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="selection:bg-amber-300 selection:text-red-950">
+
+    <!-- Canvas de nieve Retina -->
+    <canvas id="snow-canvas" aria-hidden="true"></canvas>
+
+    <!-- Canvas de confeti dorado -->
+    <canvas id="confetti-canvas" aria-hidden="true"></canvas>
+
+    <!-- Guirnalda superior de luces navideñas -->
+    <div class="lights-strand" aria-hidden="true" id="lights-container"></div>
+
+    <!-- Contenedor Principal -->
+    <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-16">
+
+        <!-- Barra superior minimalista: contador y botón de sonido -->
+        <nav aria-label="Controles del calendario" class="flex items-center justify-between gap-3 mb-7 text-xs sm:text-sm text-amber-100">
+            <div class="flex items-center gap-2.5 bg-black/30 safari-blur px-4 py-2 rounded-full border border-amber-400/30 shadow-sm">
+                <span class="inline-block w-2 h-2 rounded-full bg-amber-300 animate-pulse"></span>
+                <span id="progress-text" class="font-medium tracking-wide">0 / 24 descubiertas</span>
+            </div>
+
+            <button type="button" id="toggle-sound-btn" aria-label="Activar o silenciar sonido" class="bg-black/30 hover:bg-black/45 active:scale-95 safari-blur px-4 py-2 rounded-full border border-amber-400/30 transition flex items-center gap-2 text-amber-100 font-medium shadow-sm min-h-[40px]">
+                <span id="sound-icon" aria-hidden="true">🔔</span>
+                <span id="sound-label">Sonido: ON</span>
+            </button>
+        </nav>
+
+        <!-- Vista oculta de seguimiento para el creador (?seguimiento=tu-clave o ?admin=1) -->
+        <section id="tracking-panel" aria-label="Panel privado de seguimiento" class="hidden mb-10 rounded-3xl bg-[#1c0408]/90 safari-blur border-2 border-amber-400/50 shadow-2xl p-5 sm:p-7 text-amber-50">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-amber-400/25">
+                <div>
+                    <div class="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-amber-300 font-semibold mb-1">
+                        <span>🔒 Vista Privada de Seguimiento</span>
+                    </div>
+                    <h2 class="font-serif-title text-2xl sm:text-3xl font-bold text-amber-100">
+                        Registro de Puertas Abiertas
+                    </h2>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" id="refresh-remote-btn" class="px-4 py-2 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-300/40 text-xs sm:text-sm font-medium text-amber-100 transition min-h-[38px]">
+                        ↻ Actualizar remoto
+                    </button>
+                    <button type="button" id="copy-tracking-summary-btn" class="px-4 py-2 rounded-full bg-emerald-900/60 hover:bg-emerald-800/70 border border-emerald-400/40 text-xs sm:text-sm font-medium text-emerald-100 transition min-h-[38px]">
+                        Copiar resumen
+                    </button>
+                    <button type="button" id="close-tracking-btn" class="px-4 py-2 rounded-full bg-black/40 hover:bg-black/60 border border-amber-300/25 text-xs sm:text-sm font-medium text-amber-200 transition min-h-[38px]">
+                        Ocultar panel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Aviso claro de alcance: local del navegador vs endpoint remoto -->
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs sm:text-sm">
+                <div class="rounded-2xl bg-black/35 border border-amber-400/20 p-3.5">
+                    <div class="font-semibold text-amber-300 mb-1">📱 Almacenamiento local (este navegador)</div>
+                    <p class="text-amber-100/80 leading-relaxed">
+                        Muestra las puertas abiertas en <strong>este mismo navegador y dispositivo</strong> mediante <code>localStorage</code>. Si ella abre el enlace desde su propio iPhone o navegador, esos datos se guardan en el suyo, no aquí.
+                    </p>
+                </div>
+                <div class="rounded-2xl bg-black/35 border border-amber-400/20 p-3.5">
+                    <div class="font-semibold text-amber-300 mb-1">🌐 Endpoint externo configurable</div>
+                    <p id="remote-status-text" class="text-amber-100/80 leading-relaxed">
+                        No hay ningún webhook o JSON externo configurado todavía.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Resumen numérico rápido -->
+            <div id="tracking-stats" class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                <!-- Se rellena dinámicamente -->
+            </div>
+
+            <!-- Tabla / lista de días 1 a 24 con fechas y horas -->
+            <div class="mt-5 max-h-[420px] overflow-y-auto rounded-2xl border border-amber-400/25 bg-black/25" style="-webkit-overflow-scrolling: touch;">
+                <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                    <thead class="sticky top-0 bg-[#36060d] text-amber-300 uppercase text-[11px] tracking-wider border-b border-amber-400/25">
+                        <tr>
+                            <th class="py-3 px-4">Día</th>
+                            <th class="py-3 px-4">Mensaje</th>
+                            <th class="py-3 px-4">Estado</th>
+                            <th class="py-3 px-4">Fecha y hora</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tracking-table-body" class="divide-y divide-amber-400/15">
+                        <!-- Filas generadas por JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Encabezado Romántico -->
+        <header class="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
+            <div class="inline-flex items-center justify-center gap-2.5 text-amber-300/90 text-xs sm:text-sm uppercase tracking-[0.22em] mb-3">
+                <span>✦</span>
+                <span>1 al 24 de Diciembre</span>
+                <span>✦</span>
+            </div>
+
+            <h1 class="font-serif-title font-bold text-4xl sm:text-6xl md:text-7xl text-transparent bg-clip-text bg-gradient-to-b from-amber-50 via-amber-200 to-amber-400 drop-shadow-md py-1 leading-tight">
+                Tu Calendario de Adviento
+            </h1>
+
+            <p class="font-serif-title italic text-base sm:text-xl text-amber-100/95 mt-3 px-3 leading-relaxed">
+                24 días de cariño a través de la distancia, esperando el momento de volver a abrazarte.
+            </p>
+        </header>
+
+        <!-- Cuadrícula Responsive de 24 Puertas -->
+        <main>
+            <div id="calendar-grid" class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-5 md:gap-6">
+                <!-- Las 24 puertas se generan dinámicamente con JavaScript -->
+            </div>
+        </main>
+
+        <!-- Pie de página cálido y discreto -->
+        <footer class="mt-16 text-center text-amber-200/75 text-xs sm:text-sm space-y-3">
+            <div class="flex items-center justify-center gap-3 text-amber-300/60">
+                <span class="h-px w-12 bg-amber-300/30"></span>
+                <span>♥</span>
+                <span class="h-px w-12 bg-amber-300/30"></span>
+            </div>
+            <p class="font-serif-title italic">Sin importar los kilómetros, siempre cerquita de ti</p>
+            <div class="pt-1">
+                <button type="button" id="reset-progress-btn" class="text-xs text-amber-300/60 hover:text-amber-200 underline underline-offset-4 transition py-2 px-3">
+                    Reiniciar puertas
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- =====================================================================
+         MODAL TIPO TARJETA POSTAL PARA LEER EL MENSAJE DEL DÍA
+    ====================================================================== -->
+    <div id="surprise-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/75 safari-blur transition-opacity duration-300" style="padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: max(1rem, env(safe-area-inset-bottom));">
+        <div id="surprise-modal-card" class="relative w-full max-w-lg bg-[#fdf8f0] text-stone-800 rounded-3xl shadow-2xl border-4 border-[#d4af37] overflow-hidden transform scale-95 transition-transform duration-300">
+
+            <!-- Cabecera festiva de la tarjeta postal -->
+            <div class="bg-gradient-to-r from-[#4a0811] via-[#8f1826] to-[#4a0811] px-6 py-5 text-center relative border-b-2 border-[#d4af37]">
+                <button type="button" id="close-surprise-btn" aria-label="Cerrar tarjeta" class="absolute top-3.5 right-3.5 w-10 h-10 rounded-full bg-black/25 hover:bg-black/40 text-amber-100 flex items-center justify-center transition text-base">
+                    ✕
+                </button>
+                <div class="text-amber-300 text-xs uppercase tracking-[0.22em] font-semibold mb-1" id="modal-day-label">
+                    1 de Diciembre
+                </div>
+                <div id="modal-icon" class="text-4xl my-1 drop-shadow">💌</div>
+                <h2 id="modal-title" class="font-serif-title text-2xl sm:text-3xl font-bold text-amber-50">
+                    Título del día
+                </h2>
+            </div>
+
+            <!-- Cuerpo de la tarjeta postal -->
+            <div class="p-6 sm:p-8 relative max-h-[70dvh] overflow-y-auto" style="-webkit-overflow-scrolling: touch;">
+                <div class="postal-stamp rounded-2xl p-6 sm:p-7 shadow-inner relative">
+                    <!-- Detalle decorativo esquina postal -->
+                    <div class="flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-[#8f1826]/65 font-semibold mb-3 pb-2 border-b border-[#d4af37]/35">
+                        <span>Correo Especial de Adviento</span>
+                        <span>♥ Distancia Cero</span>
+                    </div>
+
+                    <p id="modal-message" class="text-base sm:text-lg text-stone-800 leading-relaxed whitespace-pre-line font-normal text-center">
+                        Mensaje de cariño aquí...
+                    </p>
+                </div>
+
+                <!-- Firma y botón de cierre -->
+                <div class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <span class="font-serif-title italic text-lg sm:text-xl text-[#8f1826] font-semibold">
+                        Con todo mi cariño ♥
+                    </span>
+                    <button type="button" id="accept-surprise-btn" class="w-full sm:w-auto px-6 py-3 rounded-full bg-gradient-to-r from-[#173f2c] to-[#1f523a] hover:from-[#1c4b35] hover:to-[#266346] text-amber-50 font-medium text-sm shadow-md border border-[#d4af37]/60 transition transform active:scale-95">
+                        Cerrar tarjeta ✨
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         TOAST FLOTANTE DISCRETO
+    ====================================================================== -->
+    <div id="toast-box" class="fixed left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-300 transform translate-y-4 w-[90%] max-w-md" style="bottom: max(1.5rem, env(safe-area-inset-bottom));">
+        <div class="bg-[#4a0811]/95 safari-blur text-amber-100 border border-[#d4af37] px-5 py-3 rounded-full shadow-2xl text-sm font-medium flex items-center justify-center gap-2.5 text-center">
+            <span id="toast-icon">❄️</span>
+            <span id="toast-text">Aviso</span>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * ============================================================================
+         * CONFIGURACIÓN DE SEGUIMIENTO Y ENDPOINT OPCIONAL
+         * ============================================================================
+         * - Clave privada para abrir el panel oculto con ?seguimiento=TU_CLAVE
+         *   (también se admite ?admin=1).
+         * - Si deseas recibir eventos o consultar un JSON externo desde otro
+         *   dispositivo, configura TRACKING_WEBHOOK_URL y/o TRACKING_READ_JSON_URL.
+         *   Por defecto están vacíos ("") para funcionar 100% sin dependencias externas.
+         */
+        const TRACKING_SECRET_KEY = "mi-amor-2026";
+        const TRACKING_WEBHOOK_URL = "";
+        const TRACKING_READ_JSON_URL = "";
+
+        /**
+         * ============================================================================
+         * LOS 24 DÍAS COMPLETOS (RELACIÓN A DISTANCIA - TONO CERCANO Y CARIÑOSO)
+         * ============================================================================
+         */
+        const ADVENT_DAYS = [
+            {
+                day: 1,
+                icon: "✨",
+                title: "¡Empieza diciembre!",
+                message: "Buenos días, amor. Arranca diciembre y, aunque nos separen unos cuantos kilómetros, eres lo primero en lo que pienso al abrir los ojos. ¡Que tengas un día precioso!"
+            },
+            {
+                day: 2,
+                icon: "🫂",
+                title: "Un día menos",
+                message: "Hoy tacho otro día en el calendario sabiendo que falta un poquito menos para volver a abrazarte fuerte. Mientras tanto, recuerda que estoy contigo en cada paso."
+            },
+            {
+                day: 3,
+                icon: "☕",
+                title: "Un café a distancia",
+                message: "Ojalá pudiera teletransportarme ahora mismo a tu ciudad para tomarnos un café juntos antes de empezar el día. Mucho ánimo hoy, ¡tú puedes con todo!"
+            },
+            {
+                day: 4,
+                icon: "🗺️",
+                title: "Kilómetros que no importan",
+                message: "Da igual lo que marque el mapa entre tu casa y la mía: nadie me hace sentir tan acompañado, tan cerca y tan feliz como tú."
+            },
+            {
+                day: 5,
+                icon: "❤️",
+                title: "Muy orgulloso de ti",
+                message: "Hoy solo quería dejar esta nota por aquí para recordarte lo muchísimo que te quiero y lo orgulloso que estoy de todo lo que haces cada día."
+            },
+            {
+                day: 6,
+                icon: "✈️",
+                title: "Nuestro próximo reencuentro",
+                message: "Si hoy tienes un rato pesado, respira hondo y piensa en el momento en que volvamos a vernos frente a frente. ¡Ya queda menos!"
+            },
+            {
+                day: 7,
+                icon: "🍀",
+                title: "Qué suerte tengo",
+                message: "Primera semana de diciembre completada. Qué suerte tengo de compartir mi vida contigo y de tenerte incluso a la distancia."
+            },
+            {
+                day: 8,
+                icon: "🤗",
+                title: "Un abrazo gigante",
+                message: "Me encantaría estar ahí mismo para darte un abrazo largo de esos que reinician el día. Te mando uno enorme desde aquí."
+            },
+            {
+                day: 9,
+                icon: "💬",
+                title: "Cada mensaje tuyo",
+                message: "Ver una notificación tuya en el móvil me cambia el humor al instante. Gracias por hacer que la distancia se sienta tan pequeña."
+            },
+            {
+                day: 10,
+                icon: "😊",
+                title: "Hoy toca sonreír",
+                message: "Hoy te toca sonreír mucho, porque alguien a kilómetros de distancia está pensando en ti ahora mismo con una sonrisa tonta."
+            },
+            {
+                day: 11,
+                icon: "📹",
+                title: "Nuestras videollamadas",
+                message: "Contando las horas para nuestra próxima videollamada. Escuchar tu voz y verte reír sigue siendo mi momento favorito del día."
+            },
+            {
+                day: 12,
+                icon: "🗓️",
+                title: "Mitad del camino",
+                message: "Ya vamos por la mitad del calendario. Cada día que pasa es un pasito más cerca de dejar de contar días para volver a estar juntos."
+            },
+            {
+                day: 13,
+                icon: "🧣",
+                title: "Abrígate y cuídate",
+                message: "Que tengas un día súper bonito hoy. Abrígate bien y cuídate mucho, que te quiero con todas las energías cuando nos veamos."
+            },
+            {
+                day: 14,
+                icon: "💭",
+                title: "Pensando en lo nuestro",
+                message: "A veces te echo tanto de menos que se nota un poquito, pero luego pienso en lo bonito que es lo nuestro y se me llena el pecho de alegría."
+            },
+            {
+                day: 15,
+                icon: "🌟",
+                title: "Mi persona favorita",
+                message: "Eres mi persona favorita en cualquier ciudad y en cualquier huso horario. ¡A comerse el día, cariño!"
+            },
+            {
+                day: 16,
+                icon: "🌌",
+                title: "El mismo cielo",
+                message: "Cuando salgas esta noche y mires hacia arriba, acuérdate de que estamos compartiendo exactamente el mismo cielo y las mismas estrellas."
+            },
+            {
+                day: 17,
+                icon: "🎀",
+                title: "Mi mejor regalo",
+                message: "Solo falta una semana para Nochebuena. Gracias por ser mi mejor regalo durante todo este año, incluso desde lejos."
+            },
+            {
+                day: 18,
+                icon: "💋",
+                title: "Mil besos pendientes",
+                message: "Llevo la cuenta de todos los besos que tenemos acumulados, y pienso cobrármelos todos en cuanto te tenga delante."
+            },
+            {
+                day: 19,
+                icon: "☀️",
+                title: "Cosas bonitas para ti",
+                message: "Espero que hoy te pasen cosas muy bonitas, tan bonitas como esa sonrisa tuya que me alegra los días."
+            },
+            {
+                day: 20,
+                icon: "🥂",
+                title: "Vivirlo en persona",
+                message: "Qué ganas tengo de dejar de contarnos el día por teléfono y volver a compartir risas, planes y cafés en persona."
+            },
+            {
+                day: 21,
+                icon: "🕯️",
+                title: "Ya casi estamos",
+                message: "Entramos en la recta final de diciembre. Guarda un poquito de calma entre tanto lío navideño, que pronto celebramos juntos."
+            },
+            {
+                day: 22,
+                icon: "🏡",
+                title: "Siempre mi hogar",
+                message: "He aprendido que un hogar no es una dirección en el mapa: siempre vas a ser tú, estemos donde estemos."
+            },
+            {
+                day: 23,
+                icon: "🎄",
+                title: "Víspera de Nochebuena",
+                message: "Mañana ya es Nochebuena. Gracias de corazón por aguantar los kilómetros con tanto cariño, paciencia y ganas."
+            },
+            {
+                day: 24,
+                icon: "🎁",
+                title: "¡Feliz Nochebuena, mi vida!",
+                message: "¡Feliz Nochebuena, mi vida! Hoy más que nunca te siento a mi lado. Brindo por nosotros, por todo lo que hemos superado a distancia y por todos los abrazos que nos esperan. ¡Te quiero con locura!"
+            }
+        ];
+
+        const STORAGE_OPENED_KEY = 'tu_calendario_adviento_opened_safari_v2';
+        const STORAGE_LOG_KEY = 'tu_calendario_adviento_open_log_v1';
+
+        let openedDays = loadOpenedDays();
+        let openLog = loadOpenLog();
+        let remoteLogMap = {};
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        /**
+         * Carga segura del progreso de puertas abiertas en localStorage
+         */
+        function loadOpenedDays() {
+            try {
+                const raw = window.localStorage.getItem(STORAGE_OPENED_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed)) return parsed;
+                }
+            } catch (err) {
+                console.warn("Acceso a localStorage restringido:", err);
+            }
+            return [];
+        }
+
+        /**
+         * Guarda de forma segura las puertas abiertas en localStorage
+         */
+        function saveOpenedDays() {
+            try {
+                window.localStorage.setItem(STORAGE_OPENED_KEY, JSON.stringify(openedDays));
+            } catch (err) {
+                console.warn("No se pudo guardar en localStorage:", err);
+            }
+        }
+
+        /**
+         * Carga el registro detallado (fecha y hora) desde localStorage
+         */
+        function loadOpenLog() {
+            try {
+                const raw = window.localStorage.getItem(STORAGE_LOG_KEY);
+                if (raw && typeof raw === 'string') {
+                    const parsed = JSON.parse(raw);
+                    if (parsed && typeof parsed === 'object') return parsed;
+                }
+            } catch (err) {
+                console.warn("No se pudo leer el registro local:", err);
+            }
+            return {};
+        }
+
+        /**
+         * Guarda el registro detallado en localStorage
+         */
+        function saveOpenLog() {
+            try {
+                window.localStorage.setItem(STORAGE_LOG_KEY, JSON.stringify(openLog));
+            } catch (err) {
+                console.warn("No se pudo guardar el registro local:", err);
+            }
+        }
+
+        /**
+         * Formatea una marca ISO a fecha y hora legible en español
+         */
+        function formatDateTimeES(isoString) {
+            if (!isoString) return "—";
+            try {
+                const d = new Date(isoString);
+                if (Number.isNaN(d.getTime())) return String(isoString);
+                return d.toLocaleString('es-ES', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (_) {
+                return String(isoString);
+            }
+        }
+
+        /**
+         * Registra la apertura de un día y, si está configurado, envía evento al webhook
+         */
+        function recordDoorOpened(item) {
+            const nowIso = new Date().toISOString();
+            if (!openLog[item.day]) {
+                openLog[item.day] = {
+                    day: item.day,
+                    title: item.title,
+                    openedAt: nowIso,
+                    openCount: 1,
+                    userAgent: navigator.userAgent || ""
+                };
+            } else {
+                openLog[item.day].openCount = (openLog[item.day].openCount || 1) + 1;
+                openLog[item.day].lastOpenedAt = nowIso;
+            }
+            saveOpenLog();
+
+            if (TRACKING_WEBHOOK_URL && TRACKING_WEBHOOK_URL.trim() !== "") {
+                const payload = {
+                    event: "door_opened",
+                    day: item.day,
+                    title: item.title,
+                    openedAt: openLog[item.day].openedAt,
+                    lastOpenedAt: nowIso,
+                    openCount: openLog[item.day].openCount,
+                    totalOpened: openedDays.length
+                };
+                try {
+                    fetch(TRACKING_WEBHOOK_URL.trim(), {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
+                        keepalive: true
+                    }).catch((err) => {
+                        console.warn("Error enviando al webhook:", err);
+                    });
+                } catch (err) {
+                    console.warn("No se pudo invocar el webhook:", err);
+                }
+            }
+
+            if (isTrackingAuthorized()) {
+                renderTrackingPanel();
+            }
+        }
+
+        /**
+         * Comprueba si la URL contiene ?seguimiento=CLAVE o ?admin=1
+         */
+        function isTrackingAuthorized() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const seguimientoParam = params.get("seguimiento");
+                const adminParam = params.get("admin");
+                const matchesSecret = Boolean(TRACKING_SECRET_KEY) && seguimientoParam === TRACKING_SECRET_KEY;
+                const matchesAdmin = adminParam === "1" || adminParam === "true";
+                return matchesSecret || matchesAdmin;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        /**
+         * Consulta opcionalmente un endpoint JSON externo para ver aperturas remotas
+         */
+        async function fetchRemoteLog() {
+            const statusEl = document.getElementById("remote-status-text");
+            if (!TRACKING_READ_JSON_URL || TRACKING_READ_JSON_URL.trim() === "") {
+                statusEl.innerHTML = "No hay ningún <code>TRACKING_READ_JSON_URL</code> configurado en el código. Solo se muestran los datos guardados en este navegador.";
+                remoteLogMap = {};
+                renderTrackingPanel();
+                return;
+            }
+
+            statusEl.textContent = "Consultando registro remoto...";
+            try {
+                const response = await fetch(TRACKING_READ_JSON_URL.trim(), { cache: "no-store" });
+                if (!response.ok) {
+                    throw new Error("HTTP " + response.status);
+                }
+                const data = await response.json();
+                const normalized = {};
+
+                // Admite tanto { "1": { openedAt: "..." } } como [{ day: 1, openedAt: "..." }]
+                if (Array.isArray(data)) {
+                    data.forEach((entry) => {
+                        if (entry && entry.day) {
+                            normalized[Number(entry.day)] = entry;
+                        }
+                    });
+                } else if (data && typeof data === "object") {
+                    const source = data.days && typeof data.days === "object" ? data.days : data;
+                    Object.keys(source).forEach((k) => {
+                        const dayNum = Number(k);
+                        if (!Number.isNaN(dayNum) && source[k]) {
+                            normalized[dayNum] = Object.assign({ day: dayNum }, source[k]);
+                        }
+                    });
+                }
+
+                remoteLogMap = normalized;
+                statusEl.textContent = "Conectado al endpoint externo correctamente.";
+            } catch (err) {
+                console.warn("Error leyendo JSON remoto:", err);
+                statusEl.textContent = "No se pudo leer el endpoint remoto (" + err.message + "). Mostrando datos locales.";
+            }
+            renderTrackingPanel();
+        }
+
+        /**
+         * Renderiza el panel oculto de seguimiento con datos locales y/o remotos
+         */
+        function renderTrackingPanel() {
+            const panel = document.getElementById("tracking-panel");
+            if (!isTrackingAuthorized()) {
+                panel.classList.add("hidden");
+                return;
+            }
+            panel.classList.remove("hidden");
+
+            const combinedDays = ADVENT_DAYS.map((item) => {
+                const localEntry = openLog[item.day] || null;
+                const isLocalOpened = openedDays.includes(item.day) || Boolean(localEntry);
+                const remoteEntry = remoteLogMap[item.day] || null;
+                const isRemoteOpened = Boolean(remoteEntry && (remoteEntry.opened || remoteEntry.openedAt || remoteEntry.fecha));
+                const isOpened = isLocalOpened || isRemoteOpened;
+
+                let dateDisplay = "—";
+                if (localEntry && localEntry.openedAt) {
+                    dateDisplay = formatDateTimeES(localEntry.openedAt);
+                } else if (remoteEntry && (remoteEntry.openedAt || remoteEntry.fecha)) {
+                    dateDisplay = formatDateTimeES(remoteEntry.openedAt || remoteEntry.fecha);
+                }
+
+                return {
+                    day: item.day,
+                    icon: item.icon,
+                    title: item.title,
+                    isOpened,
+                    isLocalOpened,
+                    isRemoteOpened,
+                    dateDisplay
+                };
+            });
+
+            const totalOpened = combinedDays.filter((d) => d.isOpened).length;
+            const totalPending = 24 - totalOpened;
+            const lastOpenedItem = combinedDays.filter((d) => d.isOpened && d.dateDisplay !== "—").slice(-1)[0];
+
+            document.getElementById("tracking-stats").innerHTML = `
+                <div class="rounded-2xl bg-black/35 border border-amber-400/20 p-3">
+                    <div class="text-2xl font-bold text-amber-300">${totalOpened} / 24</div>
+                    <div class="text-xs text-amber-100/75 mt-0.5">Puertas abiertas</div>
+                </div>
+                <div class="rounded-2xl bg-black/35 border border-amber-400/20 p-3">
+                    <div class="text-2xl font-bold text-amber-100">${totalPending}</div>
+                    <div class="text-xs text-amber-100/75 mt-0.5">Por abrir</div>
+                </div>
+                <div class="rounded-2xl bg-black/35 border border-amber-400/20 p-3">
+                    <div class="text-2xl font-bold text-emerald-300">${Math.round((totalOpened / 24) * 100)}%</div>
+                    <div class="text-xs text-amber-100/75 mt-0.5">Progreso total</div>
+                </div>
+                <div class="rounded-2xl bg-black/35 border border-amber-400/20 p-3">
+                    <div class="text-sm font-semibold text-amber-200 truncate">${lastOpenedItem ? "Día " + lastOpenedItem.day + " · " + lastOpenedItem.dateDisplay : "Sin aperturas"}</div>
+                    <div class="text-xs text-amber-100/75 mt-0.5">Última apertura</div>
+                </div>
+            `;
+
+            const tbody = document.getElementById("tracking-table-body");
+            tbody.innerHTML = combinedDays.map((d) => {
+                const badge = d.isOpened
+                    ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-900/70 text-emerald-200 border border-emerald-400/40">✓ Abierta</span>`
+                    : `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-white/5 text-amber-200/60 border border-white/10">Cerrada</span>`;
+
+                return `
+                    <tr class="hover:bg-white/5 transition">
+                        <td class="py-2.5 px-4 font-semibold text-amber-300 whitespace-nowrap">Día ${d.day}</td>
+                        <td class="py-2.5 px-4 text-amber-50">${d.icon} ${escapeHTML(d.title)}</td>
+                        <td class="py-2.5 px-4 whitespace-nowrap">${badge}</td>
+                        <td class="py-2.5 px-4 text-amber-100/80 whitespace-nowrap">${escapeHTML(d.dateDisplay)}</td>
+                    </tr>
+                `;
+            }).join("");
+        }
+
+        /**
+         * Desbloquea el motor de audio en Safari iOS al primer toque o clic
+         */
+        function unlockSafariAudio() {
+            try {
+                if (!audioCtx) {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContextClass) {
+                        audioCtx = new AudioContextClass();
+                    }
+                }
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                if (audioCtx) {
+                    const buffer = audioCtx.createBuffer(1, 1, 22050);
+                    const source = audioCtx.createBufferSource();
+                    source.buffer = buffer;
+                    source.connect(audioCtx.destination);
+                    if (source.start) {
+                        source.start(0);
+                    }
+                }
+            } catch (err) {
+                console.warn("No se pudo inicializar el audio:", err);
+            }
+        }
+
+        window.addEventListener('touchstart', unlockSafariAudio, { once: true, passive: true });
+        window.addEventListener('click', unlockSafariAudio, { once: true, passive: true });
+
+        /**
+         * Campanitas navideñas suaves al abrir una puerta nueva
+         */
+        function playNewDoorChime() {
+            if (!soundEnabled) return;
+            try {
+                if (!audioCtx) {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContextClass) audioCtx = new AudioContextClass();
+                }
+                if (!audioCtx) return;
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const notes = [1046.50, 1318.51, 1567.98, 1975.53, 2093.00];
+                const now = audioCtx.currentTime;
+
+                notes.forEach((freq, i) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.08);
+
+                    gain.gain.setValueAtTime(0.0001, now + i * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.11, now + i * 0.08 + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.08 + 0.85);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+
+                    osc.start(now + i * 0.08);
+                    osc.stop(now + i * 0.08 + 0.9);
+                });
+            } catch (err) {
+                console.warn("Error al reproducir campanitas:", err);
+            }
+        }
+
+        /**
+         * Tono sutil y cálido al volver a leer una puerta ya descubierta
+         */
+        function playReopenTone() {
+            if (!soundEnabled) return;
+            try {
+                if (!audioCtx) {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContextClass) audioCtx = new AudioContextClass();
+                }
+                if (!audioCtx) return;
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const notes = [880.00, 1174.66];
+                const now = audioCtx.currentTime;
+
+                notes.forEach((freq, i) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.07);
+
+                    gain.gain.setValueAtTime(0.0001, now + i * 0.07);
+                    gain.gain.exponentialRampToValueAtTime(0.06, now + i * 0.07 + 0.015);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.07 + 0.45);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+
+                    osc.start(now + i * 0.07);
+                    osc.stop(now + i * 0.07 + 0.5);
+                });
+            } catch (err) {
+                console.warn("Error al reproducir tono sutil:", err);
+            }
+        }
+
+        /**
+         * Sistema nativo de confeti dorado en canvas Retina (sin dependencias externas)
+         */
+        const confettiParticles = [];
+        let confettiAnimating = false;
+
+        function launchGoldenConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            canvas.width = Math.floor(width * dpr);
+            canvas.height = Math.floor(height * dpr);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            const colors = ['#f3d266', '#d4af37', '#fff7d6', '#ff6b7a', '#4ade80'];
+
+            for (let i = 0; i < 65; i++) {
+                const angle = (Math.random() * Math.PI) - Math.PI;
+                const speed = Math.random() * 8 + 4;
+                confettiParticles.push({
+                    x: width * 0.5 + (Math.random() - 0.5) * 140,
+                    y: height * 0.55,
+                    vx: Math.cos(angle) * speed * (Math.random() > 0.5 ? 1 : -1) * 0.85,
+                    vy: Math.sin(angle) * speed - 2,
+                    size: Math.random() * 6 + 4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    rotation: Math.random() * 360,
+                    rotSpeed: (Math.random() - 0.5) * 12,
+                    alpha: 1
+                });
+            }
+
+            if (!confettiAnimating) {
+                confettiAnimating = true;
+                animateConfetti();
+            }
+        }
+
+        function animateConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            ctx.clearRect(0, 0, width, height);
+
+            for (let i = confettiParticles.length - 1; i >= 0; i--) {
+                const p = confettiParticles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.24;
+                p.vx *= 0.99;
+                p.rotation += p.rotSpeed;
+                p.alpha -= 0.012;
+
+                if (p.alpha <= 0 || p.y > height + 20) {
+                    confettiParticles.splice(i, 1);
+                    continue;
+                }
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, p.alpha);
+                ctx.translate(p.x, p.y);
+                ctx.rotate((p.rotation * Math.PI) / 180);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+                ctx.restore();
+            }
+
+            if (confettiParticles.length > 0) {
+                requestAnimationFrame(animateConfetti);
+            } else {
+                confettiAnimating = false;
+                ctx.clearRect(0, 0, width, height);
+            }
+        }
+
+        /**
+         * Notificación flotante discreta
+         */
+        let toastTimer = null;
+        function showToast(message, icon = "❄️") {
+            const box = document.getElementById('toast-box');
+            document.getElementById('toast-text').textContent = message;
+            document.getElementById('toast-icon').textContent = icon;
+
+            box.classList.remove('opacity-0', 'translate-y-4');
+            box.classList.add('opacity-100', 'translate-y-0');
+
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                box.classList.remove('opacity-100', 'translate-y-0');
+                box.classList.add('opacity-0', 'translate-y-4');
+            }, 3000);
+        }
+
+        /**
+         * Renderiza la guirnalda superior de luces navideñas cálidas
+         */
+        function renderLights() {
+            const container = document.getElementById('lights-container');
+            container.innerHTML = '';
+            const count = window.innerWidth < 640 ? 14 : 28;
+            const classes = ['bulb-gold', 'bulb-red', 'bulb-green', 'bulb-warm'];
+
+            for (let i = 0; i < count; i++) {
+                const bulb = document.createElement('div');
+                bulb.className = `bulb ${classes[i % classes.length]}`;
+                container.appendChild(bulb);
+            }
+        }
+
+        /**
+         * Actualiza el contador de puertas descubiertas
+         */
+        function updateProgressCounter() {
+            document.getElementById('progress-text').textContent = `${openedDays.length} / 24 descubiertas`;
+        }
+
+        /**
+         * Renderiza la cuadrícula de las 24 puertas
+         */
+        function renderCalendar() {
+            updateProgressCounter();
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+
+            ADVENT_DAYS.forEach((item, index) => {
+                const isOpened = openedDays.includes(item.day);
+
+                let themeClass = index % 2 === 0 ? 'door-theme-green' : 'door-theme-red';
+                if (item.day === 24) {
+                    themeClass = 'door-theme-gold';
+                }
+
+                const container = document.createElement('div');
+                container.className = `door-container ${isOpened ? 'opened' : ''}`;
+                container.setAttribute('role', 'button');
+                container.setAttribute('tabindex', '0');
+                container.setAttribute('aria-label', `Día ${item.day}: ${isOpened ? item.title : 'Puerta cerrada'}`);
+
+                const isDay24 = item.day === 24;
+                const numberColorClass = isDay24 ? 'text-[#260308]' : 'text-amber-50';
+                const borderInnerClass = isDay24 ? 'border-[#4a0811]/35' : 'border-amber-300/35';
+                const cornerColorClass = isDay24 ? 'text-[#4a0811]/75' : 'text-amber-200/70';
+
+                container.innerHTML = `
+                    <div class="door-card">
+                        <!-- Interior visible al abrir la puerta -->
+                        <div class="door-inside">
+                            <span class="text-2xl sm:text-3xl mb-1">${item.icon}</span>
+                            <span class="font-serif-title font-bold text-[11px] sm:text-sm text-[#6e111d] line-clamp-2 leading-tight">
+                                ${escapeHTML(item.title)}
+                            </span>
+                            <span class="mt-1.5 text-[9px] sm:text-[10px] uppercase tracking-wider text-amber-800 font-semibold">
+                                Leer mensaje
+                            </span>
+                        </div>
+
+                        <!-- Hoja frontal de la puerta -->
+                        <div class="door-front ${themeClass} p-2 sm:p-3">
+                            <div class="absolute inset-1.5 sm:inset-2 border ${borderInnerClass} rounded-xl pointer-events-none flex flex-col justify-between p-1.5">
+                                <div class="flex justify-between items-center">
+                                    <span class="${cornerColorClass} text-[10px]">❄</span>
+                                    <span class="${cornerColorClass} text-[10px]">♥</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="${cornerColorClass} text-[10px]">✦</span>
+                                    <span class="${cornerColorClass} text-[10px]">✦</span>
+                                </div>
+                            </div>
+
+                            <span class="font-serif-title text-3xl sm:text-5xl font-bold ${numberColorClass} drop-shadow-sm">
+                                ${item.day}
+                            </span>
+
+                            <span class="mt-1 text-sm sm:text-lg opacity-95">
+                                ${isDay24 ? '🎄✨' : item.icon}
+                            </span>
+                        </div>
+                    </div>
+                `;
+
+                const handleDoorActivation = () => {
+                    unlockSafariAudio();
+                    const alreadyOpened = openedDays.includes(item.day);
+
+                    if (!alreadyOpened) {
+                        openedDays.push(item.day);
+                        saveOpenedDays();
+                        recordDoorOpened(item);
+                        container.classList.add('opened');
+                        container.setAttribute('aria-label', `Día ${item.day}: ${item.title}`);
+                        updateProgressCounter();
+                        playNewDoorChime();
+                        launchGoldenConfetti();
+
+                        setTimeout(() => {
+                            openModal(item);
+                        }, 460);
+                    } else {
+                        recordDoorOpened(item);
+                        playReopenTone();
+                        openModal(item);
+                    }
+                };
+
+                container.addEventListener('click', handleDoorActivation);
+                container.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleDoorActivation();
+                    }
+                });
+
+                grid.appendChild(container);
+            });
+        }
+
+        /**
+         * Abre el modal tipo tarjeta postal con el mensaje del día
+         */
+        function openModal(item) {
+            const modal = document.getElementById('surprise-modal');
+            const card = document.getElementById('surprise-modal-card');
+
+            document.getElementById('modal-day-label').textContent = `${item.day} de Diciembre`;
+            document.getElementById('modal-icon').textContent = item.icon;
+            document.getElementById('modal-title').textContent = item.title;
+            document.getElementById('modal-message').textContent = item.message;
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            requestAnimationFrame(() => {
+                card.classList.remove('scale-95');
+                card.classList.add('scale-100');
+            });
+        }
+
+        /**
+         * Cierra el modal tipo tarjeta postal
+         */
+        function closeModal() {
+            const modal = document.getElementById('surprise-modal');
+            const card = document.getElementById('surprise-modal-card');
+
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 180);
+        }
+
+        function escapeHTML(str) {
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;");
+        }
+
+        /**
+         * ============================================================================
+         * NIEVE SUAVE EN CANVAS ADAPTADA A PANTALLAS RETINA (devicePixelRatio)
+         * ============================================================================
+         */
+        function initRetinaSnowfall() {
+            const canvas = document.getElementById('snow-canvas');
+            const ctx = canvas.getContext('2d');
+            let width = window.innerWidth;
+            let height = window.innerHeight;
+            let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+            function resizeCanvas() {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                dpr = Math.min(window.devicePixelRatio || 1, 2);
+                canvas.width = Math.floor(width * dpr);
+                canvas.height = Math.floor(height * dpr);
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            }
+
+            resizeCanvas();
+
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+                renderLights();
+            });
+
+            const flakeCount = width < 640 ? 48 : 90;
+            const flakes = [];
+
+            for (let i = 0; i < flakeCount; i++) {
+                flakes.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    r: Math.random() * 2.5 + 1,
+                    drift: Math.random() * flakeCount,
+                    speedY: Math.random() * 0.7 + 0.35,
+                    opacity: Math.random() * 0.55 + 0.25
+                });
+            }
+
+            let angle = 0;
+
+            function draw() {
+                ctx.clearRect(0, 0, width, height);
+                angle += 0.0045;
+
+                for (let i = 0; i < flakes.length; i++) {
+                    const f = flakes[i];
+                    ctx.beginPath();
+                    ctx.fillStyle = `rgba(255, 250, 240, ${f.opacity})`;
+                    ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2, true);
+                    ctx.fill();
+
+                    f.y += f.speedY;
+                    f.x += Math.sin(angle + f.drift) * 0.42;
+
+                    if (f.y > height) {
+                        f.y = -5;
+                        f.x = Math.random() * width;
+                    }
+                    if (f.x > width) f.x = 0;
+                    if (f.x < 0) f.x = width;
+                }
+
+                requestAnimationFrame(draw);
+            }
+
+            draw();
+        }
+
+        /**
+         * ============================================================================
+         * INICIALIZACIÓN Y EVENTOS
+         * ============================================================================
+         */
+        window.addEventListener('DOMContentLoaded', () => {
+            renderLights();
+            renderCalendar();
+            initRetinaSnowfall();
+
+            if (isTrackingAuthorized()) {
+                renderTrackingPanel();
+                fetchRemoteLog();
+            }
+
+            // Botón actualizar remoto en panel de seguimiento
+            document.getElementById('refresh-remote-btn').addEventListener('click', () => {
+                fetchRemoteLog();
+                showToast("Actualizando registro de seguimiento", "🔄");
+            });
+
+            // Botón copiar resumen del seguimiento
+            document.getElementById('copy-tracking-summary-btn').addEventListener('click', () => {
+                const lines = ADVENT_DAYS.map((item) => {
+                    const localEntry = openLog[item.day];
+                    const remoteEntry = remoteLogMap[item.day];
+                    const opened = openedDays.includes(item.day) || Boolean(localEntry) || Boolean(remoteEntry);
+                    const rawDate = (localEntry && localEntry.openedAt) || (remoteEntry && (remoteEntry.openedAt || remoteEntry.fecha));
+                    const when = opened ? formatDateTimeES(rawDate) : "Cerrada";
+                    return `Día ${item.day} (${item.title}): ${opened ? "Abierta - " + when : "Cerrada"}`;
+                });
+                const summaryText = `Puertas abiertas: ${openedDays.length}/24\n` + lines.join("\n");
+
+                let copied = false;
+                try {
+                    const ta = document.createElement("textarea");
+                    ta.value = summaryText;
+                    ta.style.position = "fixed";
+                    ta.style.opacity = "0";
+                    document.body.appendChild(ta);
+                    ta.focus();
+                    ta.select();
+                    copied = document.execCommand("copy");
+                    document.body.removeChild(ta);
+                } catch (_) {
+                    copied = false;
+                }
+
+                if (copied) {
+                    showToast("Resumen copiado al portapapeles", "📋");
+                } else {
+                    showToast("No se pudo copiar automáticamente", "⚠️");
+                }
+            });
+
+            // Botón ocultar panel de seguimiento
+            document.getElementById('close-tracking-btn').addEventListener('click', () => {
+                document.getElementById('tracking-panel').classList.add('hidden');
+            });
+
+            // Botón activar/silenciar sonido
+            document.getElementById('toggle-sound-btn').addEventListener('click', () => {
+                unlockSafariAudio();
+                soundEnabled = !soundEnabled;
+                document.getElementById('sound-icon').textContent = soundEnabled ? '🔔' : '🔕';
+                document.getElementById('sound-label').textContent = soundEnabled ? 'Sonido: ON' : 'Sonido: OFF';
+                if (soundEnabled) playReopenTone();
+            });
+
+            // Eventos del modal
+            document.getElementById('close-surprise-btn').addEventListener('click', closeModal);
+            document.getElementById('accept-surprise-btn').addEventListener('click', closeModal);
+            document.getElementById('surprise-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'surprise-modal') closeModal();
+            });
+
+            // Cerrar modal con tecla Escape en Mac / iPad
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeModal();
+            });
+
+            // Enlace discreto para reiniciar puertas (con doble toque de confirmación)
+            let resetArmed = false;
+            document.getElementById('reset-progress-btn').addEventListener('click', (e) => {
+                const btn = e.target;
+                if (!resetArmed) {
+                    resetArmed = true;
+                    btn.textContent = "¿Seguro? Pulsa otra vez para cerrar todas";
+                    setTimeout(() => {
+                        resetArmed = false;
+                        btn.textContent = "Reiniciar puertas";
+                    }, 3500);
+                } else {
+                    resetArmed = false;
+                    openedDays = [];
+                    openLog = {};
+                    saveOpenedDays();
+                    saveOpenLog();
+                    renderCalendar();
+                    if (isTrackingAuthorized()) {
+                        renderTrackingPanel();
+                    }
+                    btn.textContent = "Reiniciar puertas";
+                    showToast("Todas las puertas vuelven a estar cerradas", "🎁");
+                }
+            });
+        });
+    </script>
+</body>
+</html>
